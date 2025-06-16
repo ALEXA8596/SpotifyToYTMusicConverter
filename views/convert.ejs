@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+  </head>
+  <body>
+    <%= JSON.stringify(playlistData) %>
+    <!-- <div class="center-content">
+      <h1><%= title %></h1>
+      <p>Welcome to <%= title %></p>
+      <input type="text" id="playlistUrl" placeholder="Enter Spotify Playlist here">
+      <br>
+      <p>OR</p>
+      <script>
+      document.getElementById('playlistUrl').addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+        const playlistUrl = event.target.value;
+        const params = new URLSearchParams({ url: playlistUrl });
+        window.location.href = `/convert?${params.toString()}`;
+        }
+      });
+      </script>
+      <button>Sign in through Spotify</button>
+    </div> -->
+  </body>
+  <script>
+    console.log(playlistData)
+  </script>
+</html>
