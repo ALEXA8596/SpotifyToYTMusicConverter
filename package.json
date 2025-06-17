@@ -13,6 +13,9 @@
     "http-errors": "~1.6.3",
     "morgan": "~1.9.1",
     "node-fetch": "^2.6.7",
-    "spotify-url-info": "^3.2.18"
+    "spotify-url-info": "^3.2.18",
+    "uuid": "^11.1.0",
+    "youtube-sr": "^4.3.11",
+    "youtubei.js": "^14.0.0"
   }
 }

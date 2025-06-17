@@ -3,6 +3,7 @@ var router = express.Router();
 var fetch = require("node-fetch");
 const { getData, getPreview, getTracks, getDetails } =
   require("spotify-url-info")(fetch);
+const { Innertube } = require('youtubei.js')
 
 /* GET convert. */
 router.get("/", async function (req, res, next) {
@@ -11,11 +12,23 @@ router.get("/", async function (req, res, next) {
   if (queryParams.get("url")) {
     try {
       const data = await getData(queryParams.get("url"));
-      console.log(data)
+
+      if (data.type != "playlist") {
+        return res.render("convert", {
+          playlistData: null,
+          playlistExists: false,
+          error: "The URL Provided isn't a Playlist, or there's been an error with the API",
+          title: "Spotify Converter",
+        });
+      }
+      console.log(data);
+      const trackList = data.trackList?.filter(track => track.entityType == "track");
+
+
       return res.render("convert", {
         playlistData: data,
         playlistExists: true,
-        title: "Spotify Converter"
+        title: "Spotify Converter",
       });
     } catch {}
   }
@@ -23,7 +36,7 @@ router.get("/", async function (req, res, next) {
     playlistData: null,
     playlistExists: false,
     error: "No URL Provided",
-    title: "Spotify Converter"
+    title: "Spotify Converter",
   });
 });
 
