@@ -14,3 +14,34 @@ a {
   align-items: center;
   height: 100vh;
 }
+
+.track-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.original-track {
+  width: 30%;
+}
+
+.arrow {
+  margin: 0 10px;
+}
+
+.youtube-result {
+  display: flex;
+  align-items: center;
+  width: 30%;
+}
+
+.youtube-result img {
+  width: 50px;
+  height: 50px;
+  margin-right: 10px;
+}
+
+.track-info {
+  display: flex;
+  flex-direction: column;
+}

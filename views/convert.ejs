@@ -1,30 +1,96 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title><%= title %></title>
-    <link rel='stylesheet' href='/stylesheets/style.css' />
-  </head>
-  <body>
-    <%= JSON.stringify(playlistData) %>
-    <!-- <div class="center-content">
-      <h1><%= title %></h1>
-      <p>Welcome to <%= title %></p>
-      <input type="text" id="playlistUrl" placeholder="Enter Spotify Playlist here">
-      <br>
-      <p>OR</p>
-      <script>
-      document.getElementById('playlistUrl').addEventListener('keypress', function(event) {
-        if (event.key === 'Enter') {
-        const playlistUrl = event.target.value;
-        const params = new URLSearchParams({ url: playlistUrl });
-        window.location.href = `/convert?${params.toString()}`;
-        }
-      });
-      </script>
-      <button>Sign in through Spotify</button>
-    </div> -->
-  </body>
-  <script>
-    console.log(playlistData)
-  </script>
+
+<head>
+  <title><%= title %></title>
+  <link rel='stylesheet' href='/stylesheets/style.css' />
+</head>
+
+<body>
+  <% if (playlistData) { %>
+  <% playlistData.forEach(item => { %>
+  <div class="track-container" value="<%= item.title %> - <%= item.artist %>">
+    <div class="original-track" value="<%= item.title %> - <%= item.artist %>">
+      <%= item.title %> - <%= item.artist %>
+    </div>
+    <div class="arrow" value="→">→</div>
+    <% if (item.results && item.results.length > 0) { %>
+    <div class="youtube-result" value="<%= item.results[0].title %>">
+      <img src="<%= item.results[0].thumbnail %>" alt="Thumbnail" value="<%= item.results[0].thumbnail %>">
+      <div class="track-info" value="<%= item.results[0].title %>">
+        <div class="title" value="<%= item.results[0].title %>"><%= item.results[0].title %></div>
+        <div class="author" value="<%= item.results[0].author %>"><%= item.results[0].author %></div>
+        <div class="duration" value="<%= item.results[0].duration %>"><%= item.results[0].duration %></div>
+      </div>
+    </div>
+    <% } else { %>
+    <div class="no-results" value="No results found">No results found</div>
+    <% } %>
+  </div>
+  <% }); %>
+  <% } else { %>
+  <p value="No playlist data available.">No playlist data available.</p>
+  <% } %>
+  <button onclick="scrapeAndSendData()" class="convert-playlist-button">Convert Playlist</button>
+</body>
+<script>
+  function scrapeAndSendData() {
+    const scrapedData = playlistData;
+
+    fetch('/convert/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(scrapedData)
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('Data saved successfully:', data);
+      oauthSignIn(data.playlistId)
+    })
+    .catch(error => {
+      console.error('Error saving data:', error);
+    });
+
+    
+  }
+
+  /*
+   * Create form to request access token from Google's OAuth 2.0 server.
+   */
+  function oauthSignIn(playlistId) {
+    // Google's OAuth 2.0 endpoint for requesting an access token
+    var oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
+
+    // Create <form> element to submit parameters to OAuth 2.0 endpoint.
+    var form = document.createElement('form');
+    form.setAttribute('method', 'GET'); // Send as a GET request.
+    form.setAttribute('action', oauth2Endpoint);
+
+    // Parameters to pass to OAuth 2.0 endpoint.
+    var params = {
+      'client_id': '990953734194-2cgu7jg9nvses6v7d2sg3ijssivals2o.apps.googleusercontent.com',
+      'redirect_uri': 'http://localhost:3000/convert/callback',
+      'response_type': 'token',
+      'scope': 'https://www.googleapis.com/auth/youtube',
+      'include_granted_scopes': 'true',
+      'state': playlistId
+    };
+
+    // Add form parameters as hidden input values.
+    for (var p in params) {
+      var input = document.createElement('input');
+      input.setAttribute('type', 'hidden');
+      input.setAttribute('name', p);
+      input.setAttribute('value', params[p]);
+      form.appendChild(input);
+    }
+
+    // Add form to page and submit it to open the OAuth 2.0 endpoint.
+    document.body.appendChild(form);
+    form.submit();
+  }
+</script>
+
 </html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title><%= title %></title>
+  <link rel='stylesheet' href='/stylesheets/style.css' />
+</head>
+
+<body>
+  <h1><%= title %></h1>
+  
+  <h2>Tracks to be added:</h2>
+  <ul id="trackList"></ul>
+
+  <script>
+    async function fetchPlaylistData() {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const state = hashParams.get('state');
+      const playlistId = state.split("_")[1];
+
+      try {
+        const response = await fetch(`/convert/getPlaylistData/${playlistId}`);
+        const data = await response.json();
+        const playlistData = data.playlistData;
+
+        const trackList = document.getElementById('trackList');
+        playlistData.forEach(item => {
+          const listItem = document.createElement('li');
+          listItem.textContent = `${item.originalTrack} - YouTube Result: ${item.youtubeResult ? item.youtubeResult.title : 'No Result'}`;
+          trackList.appendChild(listItem);
+        });
+      } catch (error) {
+        console.error('Error fetching playlist data:', error);
+      }
+    }
+
+    fetchPlaylistData();
+  </script>
+
+  <button id="createPlaylistButton">Create YouTube Playlist</button>
+
+</body>
+<script>
+  document.getElementById('createPlaylistButton').addEventListener('click', function() {
+    createYoutubePlaylist();
+  });
+
+  async function createYoutubePlaylist() {
+
+    async function getAccessToken(playlistId) {
+      // Make a request to the server to get the access token
+      const response = await fetch(`/convert/getAccessToken?playlistId=${playlistId}`);
+      const data = await response.json();
+      return data.accessToken;
+    }
+
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const state = hashParams.get('state');
+    const accessToken = hashParams.get('access_token');
+    const playlistName = 'Spotify Conversion'; // You can make this dynamic
+    const playlistDescription = 'Playlist converted from Spotify';
+    const playlistPrivacyStatus = 'private'; // or 'public' or 'unlisted'
+    const playlistId = state.split("_")[1];
+    // eslint-disable-next-line
+    const playlistData = await fetch(`/convert/getPlaylistData/${playlistId}`)
+      .then(response => response.json())
+      .then(data => data.playlistData);
+
+    // Function to create the playlist
+    async function createPlaylist(accessToken, playlistName, playlistDescription, playlistPrivacyStatus) {
+      const url = 'https://www.googleapis.com/youtube/v3/playlists?part=snippet,status';
+      const headers = {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      };
+      const body = JSON.stringify({
+        snippet: {
+          title: playlistName,
+          description: playlistDescription
+        },
+        status: {
+          privacyStatus: playlistPrivacyStatus
+        }
+      });
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: headers,
+          body: body
+        });
+
+        const data = await response.json();
+        if (data.error) {
+          console.error('Error creating playlist:', data.error);
+          return null;
+        }
+        console.log('Playlist created:', data);
+        return data.id; // Return the playlist ID
+      } catch (error) {
+        console.error('Error creating playlist:', error);
+        return null;
+      }
+    }
+
+    // Function to add a video to the playlist
+    async function addVideoToPlaylist(accessToken, playlistId, videoId) {
+      const url = 'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet';
+      const headers = {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      };
+      const body = JSON.stringify({
+        snippet: {
+          playlistId: playlistId,
+          resourceId: {
+            kind: 'youtube#video',
+            videoId: videoId
+          }
+        }
+      });
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: headers,
+          body: body
+        });
+
+        const data = await response.json();
+        if (data.error) {
+          console.error('Error adding video to playlist:', data.error);
+          return false;
+        }
+        console.log('Video added to playlist:', data);
+        return true;
+      } catch (error) {
+        console.error('Error adding video to playlist:', error);
+        return false;
+      }
+    }
+
+    // Main function to orchestrate playlist creation and video addition
+    async function main() {
+      // 1. Create the playlist
+      const newPlaylistId = await createPlaylist(accessToken, playlistName, playlistDescription, playlistPrivacyStatus);
+
+      if (!newPlaylistId) {
+        console.error('Failed to create playlist.');
+        return;
+      }
+
+      // 2. Add videos to the playlist
+      console.log(playlistData)
+      for (const item of playlistData) {
+        if (item.results && item.results[0].url) {
+          const videoId = item.results[0].url.split("=")[1]; // Extract video ID from URL
+          console.log(`Adding video ${videoId} to playlist ${newPlaylistId}`);
+          const added = await addVideoToPlaylist(accessToken, newPlaylistId, videoId);
+          if (!added) {
+            console.warn(`Failed to add video ${videoId} to playlist.`);
+          }
+        } else {
+          console.warn(`No YouTube result for ${item.originalTrack}.`);
+        }
+      }
+
+      console.log('Playlist creation and video addition complete!');
+    }
+
+    main();
+  }
+</script>
+
+</html>

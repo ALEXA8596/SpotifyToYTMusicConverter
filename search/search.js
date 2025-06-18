@@ -35,9 +35,9 @@ async function search(query) {
       url: m.url || `https://music.youtube.com/watch?v=${m.id}`,
       id: m.id,
       requestedBy: null,
-      thumbnail: m.thumbnail.contents.sort( (a,b) => a.height * a.width > b.height * b.width) || "",
+      thumbnail: m?.thumbnail?.contents?.sort( (a,b) => a.height * a.width > b.height * b.width)[0].url || "",
       views: m.views || 0,
-      duration: m.duration || "0:00",
+      duration: m.duration.text || "0:00",
       source: "youtube-music",
       album: {
         name: m.album.name,
