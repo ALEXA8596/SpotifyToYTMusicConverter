@@ -3,14 +3,45 @@
 
 <head>
   <title><%= title %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
   <link rel='stylesheet' href='/stylesheets/style.css' />
 </head>
 
-<body>
-  <h1><%= title %></h1>
-  
-  <h2>Tracks to be added:</h2>
-  <ul id="trackList"></ul>
+<body class="bg-light">
+  <div class="container py-5">
+    <h1 class="mb-4 text-center"><%= title %></h1>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="playlistTitle h4 mb-3">Loading...</h2>
+        <h2 class="h5">Tracks to be added:</h2>
+        <ul id="trackList" class="list-group mb-3"></ul>
+      </div>
+    </div>
+
+    <form id="playlistForm" class="mb-4">
+      <div class="form-group">
+        <label for="playlistNameInput">Playlist Name:</label>
+        <input type="text" class="form-control" id="playlistNameInput" name="playlistNameInput" required>
+      </div>
+      <div class="form-group">
+        <label for="playlistDescriptionInput">Description:</label>
+        <input type="text" class="form-control" id="playlistDescriptionInput" name="playlistDescriptionInput" value="Playlist Converted from Spotify by Spotify To YT Converter">
+      </div>
+      <div class="form-group">
+        <label for="playlistPrivacySelect">Privacy:</label>
+        <select class="form-control" id="playlistPrivacySelect" name="playlistPrivacySelect">
+          <option value="public">Public</option>
+          <option value="unlisted">Unlisted</option>
+          <option value="private" selected>Private</option>
+        </select>
+      </div>
+    </form>
+
+    <div class="text-center">
+      <button id="createPlaylistButton" class="btn btn-primary btn-lg">Create YouTube Playlist</button>
+    </div>
+  </div>
 
   <script>
     async function fetchPlaylistData() {
@@ -21,13 +52,29 @@
       try {
         const response = await fetch(`/convert/getPlaylistData/${playlistId}`);
         const data = await response.json();
-        const playlistData = data.playlistData;
+        const playlistData = data.playlistData; // Array of tracks as in sample2.json
+
+        document.querySelectorAll('h2.playlistTitle')[0].textContent = playlistData.raw?.title || 'Playlist';
+        document.getElementById("playlistNameInput").value = playlistData.raw?.title || 'Spotify Conversion';
 
         const trackList = document.getElementById('trackList');
-        playlistData.forEach(item => {
-          const listItem = document.createElement('li');
-          listItem.textContent = `${item.originalTrack} - YouTube Result: ${item.youtubeResult ? item.youtubeResult.title : 'No Result'}`;
-          trackList.appendChild(listItem);
+        trackList.innerHTML = '';
+        playlistData.trackList.forEach(item => {
+          const mainResult = item.results && item.results[0];
+          const ytTitle = mainResult ? mainResult.title : 'No Result';
+          const ytUrl = mainResult ? mainResult.url : null;
+          const li = document.createElement('li');
+          li.className = "list-group-item d-flex justify-content-between align-items-center";
+          li.textContent = `${item.title} - YouTube Result: ${ytTitle}`;
+          if (ytUrl) {
+            const a = document.createElement('a');
+            a.href = ytUrl;
+            a.target = '_blank';
+            a.textContent = ' [link]';
+            a.className = "badge badge-info ml-2";
+            li.appendChild(a);
+          }
+          trackList.appendChild(li);
         });
       } catch (error) {
         console.error('Error fetching playlist data:', error);
@@ -37,9 +84,12 @@
     fetchPlaylistData();
   </script>
 
-  <button id="createPlaylistButton">Create YouTube Playlist</button>
-
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 </body>
+
+
 <script>
   document.getElementById('createPlaylistButton').addEventListener('click', function() {
     createYoutubePlaylist();
@@ -57,9 +107,9 @@
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const state = hashParams.get('state');
     const accessToken = hashParams.get('access_token');
-    const playlistName = 'Spotify Conversion'; // You can make this dynamic
-    const playlistDescription = 'Playlist converted from Spotify';
-    const playlistPrivacyStatus = 'private'; // or 'public' or 'unlisted'
+    const playlistName = document.getElementById("playlistNameInput").value;
+    const playlistDescription = document.getElementById("playlistDescriptionInput").value;
+    const playlistPrivacyStatus = document.getElementById("playlistPrivacySelect").value;
     const playlistId = state.split("_")[1];
     // eslint-disable-next-line
     const playlistData = await fetch(`/convert/getPlaylistData/${playlistId}`)
@@ -152,7 +202,7 @@
 
       // 2. Add videos to the playlist
       console.log(playlistData)
-      for (const item of playlistData) {
+      for (const item of playlistData.trackList) {
         if (item.results && item.results[0].url) {
           const videoId = item.results[0].url.split("=")[1]; // Extract video ID from URL
           console.log(`Adding video ${videoId} to playlist ${newPlaylistId}`);

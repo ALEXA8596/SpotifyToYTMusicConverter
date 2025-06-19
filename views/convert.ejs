@@ -3,94 +3,227 @@
 
 <head>
   <title><%= title %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
   <link rel='stylesheet' href='/stylesheets/style.css' />
 </head>
 
 <body>
-  <% if (playlistData) { %>
-  <% playlistData.forEach(item => { %>
-  <div class="track-container" value="<%= item.title %> - <%= item.artist %>">
-    <div class="original-track" value="<%= item.title %> - <%= item.artist %>">
-      <%= item.title %> - <%= item.artist %>
-    </div>
-    <div class="arrow" value="→">→</div>
-    <% if (item.results && item.results.length > 0) { %>
-    <div class="youtube-result" value="<%= item.results[0].title %>">
-      <img src="<%= item.results[0].thumbnail %>" alt="Thumbnail" value="<%= item.results[0].thumbnail %>">
-      <div class="track-info" value="<%= item.results[0].title %>">
-        <div class="title" value="<%= item.results[0].title %>"><%= item.results[0].title %></div>
-        <div class="author" value="<%= item.results[0].author %>"><%= item.results[0].author %></div>
-        <div class="duration" value="<%= item.results[0].duration %>"><%= item.results[0].duration %></div>
+  <script>
+    // Make playlistData available to client-side JS
+    var playlistData = <%- JSON.stringify(playlistData) %>;
+    console.log(playlistData)
+    
+    // Store original results order for each track
+    var originalResults = {};
+    playlistData.trackList.forEach((track, idx) => {
+      if (track.results && track.results.length > 0) {
+        originalResults[idx] = [...track.results]; // Deep copy of original results
+      }
+    });
+  </script>
+  
+  <div class="container my-4 p-4 rounded" style="background-color: #e3f2fd;">
+    <% if (playlistData.trackList) { %>
+    <% playlistData.trackList.forEach((item, idx) => {
+        // Alternate blue shades
+        const rowColors = ['#bbdefb', '#90caf9', '#64b5f6', '#42a5f5'];
+        const rowColor = rowColors[idx % rowColors.length];
+      %>
+    <div class="row mb-3 rounded p-3 align-items-center" style="background-color: <%= rowColor %>;">
+      <div class="col-md-4 font-weight-bold">
+        <div class="original-track">
+          <%= item.title %> - <%= item.artist %>
+        </div>
+      </div>
+      <div class="col-md-1 text-center display-4" style="line-height: 1;">
+        →
+      </div>
+      <div class="col-md-7">
+        <% if (item.results && item.results.length > 0) { %>
+        <div class="d-flex align-items-center youtube-result" id="youtube-result-<%= idx %>">
+          <img src="<%= item.results[0].thumbnail %>" alt="Thumbnail" class="img-thumbnail mr-3" style="width: 64px; height: 64px; object-fit: cover;">
+          <div class="track-info">
+            <div class="title font-weight-bold" id="yt-title-<%= idx %>"><%= item.results[0].title %></div>
+            <div class="author text-muted" id="yt-author-<%= idx %>"><%= item.results[0].author %></div>
+            <div class="duration small" id="yt-duration-<%= idx %>"><%= item.results[0].duration %></div>
+          </div>
+          <% if (item.results.length > 1) { %>
+          <button type="button" class="btn btn-outline-primary btn-sm ml-3" data-toggle="modal" data-target="#resultModal-<%= idx %>">
+            Switch Result
+          </button>
+          <% } %>
+        </div>
+
+        <% if (item.results.length > 1) { %>
+        <!-- Modal -->
+        <div class="modal fade" id="resultModal-<%= idx %>" tabindex="-1" role="dialog" aria-labelledby="resultModalLabel-<%= idx %>" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="resultModalLabel-<%= idx %>">Select a YouTube Result</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body" id="modal-body-<%= idx %>">
+                <!-- Modal content will be populated by JavaScript -->
+              </div>
+            </div>
+          </div>
+        </div>
+        <% } %>
+        <% } else { %>
+        <div class="no-results text-danger font-italic">No results found</div>
+        <% } %>
       </div>
     </div>
+    <% }); %>
     <% } else { %>
-    <div class="no-results" value="No results found">No results found</div>
+    <p class="text-center text-secondary">No playlist data available.</p>
     <% } %>
   </div>
-  <% }); %>
-  <% } else { %>
-  <p value="No playlist data available.">No playlist data available.</p>
-  <% } %>
-  <button onclick="scrapeAndSendData()" class="convert-playlist-button">Convert Playlist</button>
-</body>
-<script>
-  function scrapeAndSendData() {
-    const scrapedData = playlistData;
+  
+  <div class="text-center my-4">
+    <button onclick="scrapeAndSendData()" class="btn btn-primary btn-lg convert-playlist-button">Convert Playlist</button>
+  </div>
 
-    fetch('/convert/save', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(scrapedData)
-    })
-    .then(response => response.json())
-    .then(data => {
-      console.log('Data saved successfully:', data);
-      oauthSignIn(data.playlistId)
-    })
-    .catch(error => {
-      console.error('Error saving data:', error);
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+  <script>
+    // Track which result is currently selected for each track
+    var currentSelections = {};
+    
+    // Initialize current selections (all start at index 0)
+    playlistData.trackList.forEach((track, idx) => {
+      if (track.results && track.results.length > 0) {
+        currentSelections[idx] = 0;
+      }
     });
 
-    
-  }
+    // Switch result function
+    function switchResult(trackIdx, resultIdx) {
+      const track = playlistData.trackList[trackIdx];
+      if (!track || !track.results || resultIdx >= track.results.length) return;
 
-  /*
-   * Create form to request access token from Google's OAuth 2.0 server.
-   */
-  function oauthSignIn(playlistId) {
-    // Google's OAuth 2.0 endpoint for requesting an access token
-    var oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
+      // Update the current selection
+      currentSelections[trackIdx] = resultIdx;
+      
+      // Get the selected result from the original array
+      const selectedResult = originalResults[trackIdx][resultIdx];
+      
+      // Update the displayed content
+      document.querySelector('#youtube-result-' + trackIdx + ' img').src = selectedResult.thumbnail;
+      document.getElementById('yt-title-' + trackIdx).textContent = selectedResult.title;
+      document.getElementById('yt-author-' + trackIdx).textContent = selectedResult.author;
+      document.getElementById('yt-duration-' + trackIdx).textContent = selectedResult.duration;
 
-    // Create <form> element to submit parameters to OAuth 2.0 endpoint.
-    var form = document.createElement('form');
-    form.setAttribute('method', 'GET'); // Send as a GET request.
-    form.setAttribute('action', oauth2Endpoint);
+      // Update the first element in the results array (this is what gets sent to the server)
+      track.results[0] = selectedResult;
 
-    // Parameters to pass to OAuth 2.0 endpoint.
-    var params = {
-      'client_id': '990953734194-2cgu7jg9nvses6v7d2sg3ijssivals2o.apps.googleusercontent.com',
-      'redirect_uri': 'http://localhost:3000/convert/callback',
-      'response_type': 'token',
-      'scope': 'https://www.googleapis.com/auth/youtube',
-      'include_granted_scopes': 'true',
-      'state': playlistId
-    };
-
-    // Add form parameters as hidden input values.
-    for (var p in params) {
-      var input = document.createElement('input');
-      input.setAttribute('type', 'hidden');
-      input.setAttribute('name', p);
-      input.setAttribute('value', params[p]);
-      form.appendChild(input);
+      // Close the modal
+      $('#resultModal-' + trackIdx).modal('hide');
     }
 
-    // Add form to page and submit it to open the OAuth 2.0 endpoint.
-    document.body.appendChild(form);
-    form.submit();
-  }
-</script>
+    // Update modal content when shown
+    $(document).on('show.bs.modal', function(event) {
+      var modal = $(event.target);
+      var modalId = modal.attr('id');
+      
+      if (modalId && modalId.startsWith('resultModal-')) {
+        var trackIdx = parseInt(modalId.replace('resultModal-', ''), 10);
+        var currentSelection = currentSelections[trackIdx] || 0;
+        
+        if (originalResults[trackIdx]) {
+          var modalBody = document.getElementById('modal-body-' + trackIdx);
+          if (modalBody) {
+            modalBody.innerHTML = originalResults[trackIdx].map((result, rIdx) => `
+              <div class="d-flex align-items-center mb-3 p-2 border rounded ${rIdx === currentSelection ? 'bg-info text-white' : ''}">
+                <img src="${result.thumbnail}" alt="Thumbnail" class="img-thumbnail mr-3" style="width: 48px; height: 48px; object-fit: cover;">
+                <div class="flex-grow-1">
+                  <div class="font-weight-bold">${result.title}</div>
+                  <div class="text-muted">${result.author}</div>
+                  <div class="small">${result.duration}</div>
+                </div>
+                ${rIdx !== currentSelection
+                  ? `<button type="button" class="btn btn-sm btn-success ml-2" onclick="switchResult(${trackIdx}, ${rIdx})">Select</button>`
+                  : `<span class="badge badge-light ml-2">Current</span>`
+                }
+              </div>
+            `).join('');
+          }
+        }
+      }
+    });
+
+    function scrapeAndSendData() {
+      const scrapedData = playlistData;
+
+      const copy = {
+        ...playlistData
+      };
+
+      copy.trackList = copy.trackList.map(track => {
+        return {
+          ...track,
+          results: track.results ? track.results.slice(0, 1) : []
+        };
+      })
+
+      fetch('/convert/save', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(copy)
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Data saved successfully:', data);
+          oauthSignIn(data.playlistId)
+        })
+        .catch(error => {
+          console.error('Error saving data:', error);
+        });
+    }
+
+    /*
+     * Create form to request access token from Google's OAuth 2.0 server.
+     */
+    function oauthSignIn(playlistId) {
+      // Google's OAuth 2.0 endpoint for requesting an access token
+      var oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
+
+      // Create <form> element to submit parameters to OAuth 2.0 endpoint.
+      var form = document.createElement('form');
+      form.setAttribute('method', 'GET'); // Send as a GET request.
+      form.setAttribute('action', oauth2Endpoint);
+
+      // Parameters to pass to OAuth 2.0 endpoint.
+      var params = {
+        'client_id': '990953734194-2cgu7jg9nvses6v7d2sg3ijssivals2o.apps.googleusercontent.com',
+        'redirect_uri': 'http://localhost:3000/convert/callback',
+        'response_type': 'token',
+        'scope': 'https://www.googleapis.com/auth/youtube',
+        'include_granted_scopes': 'true',
+        'state': playlistId
+      };
+
+      // Add form parameters as hidden input values.
+      for (var p in params) {
+        var input = document.createElement('input');
+        input.setAttribute('type', 'hidden');
+        input.setAttribute('name', p);
+        input.setAttribute('value', params[p]);
+        form.appendChild(input);
+      }
+
+      // Add form to page and submit it to open the OAuth 2.0 endpoint.
+      document.body.appendChild(form);
+      form.submit();
+    }
+  </script>
+</body>
 
 </html>
