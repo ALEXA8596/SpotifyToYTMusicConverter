@@ -12,7 +12,7 @@
     // Make playlistData available to client-side JS
     var playlistData = <%- JSON.stringify(playlistData) %>;
     console.log(playlistData)
-    
+
     // Store original results order for each track
     var originalResults = {};
     playlistData.trackList.forEach((track, idx) => {
@@ -21,7 +21,7 @@
       }
     });
   </script>
-  
+
   <div class="container my-4 p-4 rounded" style="background-color: #e3f2fd;">
     <% if (playlistData.trackList) { %>
     <% playlistData.trackList.forEach((item, idx) => {
@@ -82,7 +82,7 @@
     <p class="text-center text-secondary">No playlist data available.</p>
     <% } %>
   </div>
-  
+
   <div class="text-center my-4">
     <button onclick="scrapeAndSendData()" class="btn btn-primary btn-lg convert-playlist-button">Convert Playlist</button>
   </div>
@@ -90,11 +90,14 @@
   <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  <script src="
+https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js
+"></script>
 
   <script>
     // Track which result is currently selected for each track
     var currentSelections = {};
-    
+
     // Initialize current selections (all start at index 0)
     playlistData.trackList.forEach((track, idx) => {
       if (track.results && track.results.length > 0) {
@@ -109,10 +112,10 @@
 
       // Update the current selection
       currentSelections[trackIdx] = resultIdx;
-      
+
       // Get the selected result from the original array
       const selectedResult = originalResults[trackIdx][resultIdx];
-      
+
       // Update the displayed content
       document.querySelector('#youtube-result-' + trackIdx + ' img').src = selectedResult.thumbnail;
       document.getElementById('yt-title-' + trackIdx).textContent = selectedResult.title;
@@ -130,11 +133,11 @@
     $(document).on('show.bs.modal', function(event) {
       var modal = $(event.target);
       var modalId = modal.attr('id');
-      
+
       if (modalId && modalId.startsWith('resultModal-')) {
         var trackIdx = parseInt(modalId.replace('resultModal-', ''), 10);
         var currentSelection = currentSelections[trackIdx] || 0;
-        
+
         if (originalResults[trackIdx]) {
           var modalBody = document.getElementById('modal-body-' + trackIdx);
           if (modalBody) {
@@ -181,6 +184,7 @@
         .then(response => response.json())
         .then(data => {
           console.log('Data saved successfully:', data);
+
           oauthSignIn(data.playlistId)
         })
         .catch(error => {
