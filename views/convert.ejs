@@ -141,20 +141,21 @@ https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js
         if (originalResults[trackIdx]) {
           var modalBody = document.getElementById('modal-body-' + trackIdx);
           if (modalBody) {
-            modalBody.innerHTML = originalResults[trackIdx].map((result, rIdx) => `
-              <div class="d-flex align-items-center mb-3 p-2 border rounded ${rIdx === currentSelection ? 'bg-info text-white' : ''}">
-                <img src="${result.thumbnail}" alt="Thumbnail" class="img-thumbnail mr-3" style="width: 48px; height: 48px; object-fit: cover;">
-                <div class="flex-grow-1">
-                  <div class="font-weight-bold">${result.title}</div>
-                  <div class="text-muted">${result.author}</div>
-                  <div class="small">${result.duration}</div>
-                </div>
-                ${rIdx !== currentSelection
-                  ? `<button type="button" class="btn btn-sm btn-success ml-2" onclick="switchResult(${trackIdx}, ${rIdx})">Select</button>`
-                  : `<span class="badge badge-light ml-2">Current</span>`
-                }
-              </div>
-            `).join('');
+            modalBody.innerHTML = originalResults[trackIdx].map(
+              (result, rIdx) =>
+              `<div class="d-flex align-items-center mb-3 p-2 border rounded ${rIdx === currentSelection ? 'bg-info text-white' : ''}">
+                  <img src="${result.thumbnail}" alt="Thumbnail" class="img-thumbnail mr-3" style="width: 48px; height: 48px; object-fit: cover;">
+                  <div class="flex-grow-1">
+                    <div class="font-weight-bold">${result.title}</div>
+                    <div class="text-muted">${result.author}</div>
+                    <div class="small">${result.duration}</div>
+                  </div>
+                  ${rIdx !== currentSelection
+                    ? `<button type="button" class="btn btn-sm btn-success ml-2" onclick="switchResult(${trackIdx}, ${rIdx})">Select</button>`
+                    : `<span class="badge badge-light ml-2">Current</span>`
+                  }
+                </div>`
+            ).join('');
           }
         }
       }
@@ -184,7 +185,8 @@ https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js
         .then(response => response.json())
         .then(data => {
           console.log('Data saved successfully:', data);
-
+          // Cookies.set("playlistId", data.playlistId)
+          window.localStorage.setItem("playlistId", data.playlistId)
           oauthSignIn(data.playlistId)
         })
         .catch(error => {
@@ -204,6 +206,16 @@ https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js
       form.setAttribute('method', 'GET'); // Send as a GET request.
       form.setAttribute('action', oauth2Endpoint);
 
+      const generateRandomString = (length) => {
+        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        const values = crypto.getRandomValues(new Uint8Array(length));
+        return values.reduce((acc, x) => acc + possible[x % possible.length], "");
+      }
+
+      const state = generateRandomString(32);
+
+      window.localStorage.setItem("state", state)
+
       // Parameters to pass to OAuth 2.0 endpoint.
       var params = {
         'client_id': '990953734194-2cgu7jg9nvses6v7d2sg3ijssivals2o.apps.googleusercontent.com',
@@ -211,7 +223,7 @@ https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js
         'response_type': 'token',
         'scope': 'https://www.googleapis.com/auth/youtube',
         'include_granted_scopes': 'true',
-        'state': playlistId
+        'state': state
       };
 
       // Add form parameters as hidden input values.

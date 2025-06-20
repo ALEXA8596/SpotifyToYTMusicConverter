@@ -45,9 +45,11 @@
 
   <script>
     async function fetchPlaylistData() {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const state = hashParams.get('state');
-      const playlistId = state.split("_")[1];
+      // const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      // const state = hashParams.get('state');
+
+      // const playlistId = state.split("_")[1];
+      const playlistId = window.localStorage.getItem("playlistId");
 
       try {
         const response = await fetch(`/convert/getPlaylistData/${playlistId}`);
@@ -100,22 +102,17 @@ https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js
   });
 
   async function createYoutubePlaylist() {
-
-    async function getAccessToken(playlistId) {
-      // Make a request to the server to get the access token
-      const response = await fetch(`/convert/getAccessToken?playlistId=${playlistId}`);
-      const data = await response.json();
-      return data.accessToken;
-    }
-
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const state = hashParams.get('state');
+
+    if(state != window.localStorage.getItem("state")) return;
+
     const accessToken = hashParams.get('access_token');
     const playlistName = document.getElementById("playlistNameInput").value;
     const playlistDescription = document.getElementById("playlistDescriptionInput").value;
     const playlistPrivacyStatus = document.getElementById("playlistPrivacySelect").value;
-    const playlistId = state.split("_")[1];
-    // eslint-disable-next-line
+    const playlistId = localStorage.getItem("playlistId");
+    
     const playlistData = await fetch(`/convert/getPlaylistData/${playlistId}`)
       .then(response => response.json())
       .then(data => data.playlistData);
